@@ -3,36 +3,14 @@ import pandas as pd
 import plotly.express as px
 import io
 
-# Limita a largura para simular uma proporção de folha A4 na vertical
 st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS avançados para criar cartões pequenos, bonitos e coloridos
+# Estilos CSS para deixar os cartões pequenos e o número de eficiência em destaque
 st.markdown("""
     <style>
-    .block-container { padding-top: 1rem; padding-bottom: 1rem; max-width: 1200px; }
-    
-    .cartao {
-        border-radius: 6px;
-        padding: 8px;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-        border-left: 5px solid;
-    }
-    
-    /* Cores de fundo e borda (Mapa Verde/Vermelho) */
-    .cartao-op { border-left-color: #28a745; background-color: #f2fff5; }
-    .cartao-man { border-left-color: #dc3545; background-color: #fff5f5; }
-    
-    .titulo { font-size: 13px; font-weight: 700; color: #2c3e50; text-align: center; margin-bottom: 4px; }
-    .status-badge { font-size: 10px; font-weight: bold; text-align: center; margin-bottom: 4px; }
-    .txt-op { color: #28a745; }
-    .txt-man { color: #dc3545; }
-    
-    .linha { border-top: 1px solid #e0e0e0; margin: 4px 0; }
-    
-    .info { font-size: 11px; color: #444; margin: 2px 0; display: flex; justify-content: space-between; }
-    .info-alerta { font-size: 11px; color: #dc3545; font-weight: 600; margin: 2px 0; }
-    .info-aviso { font-size: 11px; color: #d35400; font-weight: 600; margin: 2px 0; }
+    .block-container { padding-top: 1rem; padding-bottom: 1rem; }
+    .nome-maquina { font-size: 15px; font-weight: bold; text-align: center; color: #1f77b4; margin-bottom: 0px; }
+    .eficiencia { font-size: 24px; font-weight: 900; text-align: center; margin-top: 5px; margin-bottom: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -64,7 +42,7 @@ pagina = st.sidebar.radio("Escolha a tela:", ["Painel Principal", "Lançamentos 
 # TELA 1: PAINEL PRINCIPAL
 # ==========================================
 if pagina == "Painel Principal":
-    st.title("Painel de Controlo: Tinturaria")
+    st.title("Painel de Controle: Tinturaria")
 
     col_filtro1, col_filtro2, col_vazia = st.columns([2, 2, 8])
     with col_filtro1:
@@ -76,8 +54,8 @@ if pagina == "Painel Principal":
 
     col_titulo, col_grafico = st.columns([4, 1])
     with col_titulo:
-        st.markdown(f"### ⚙️ Situação em {mes_escolhido} de {ano_escolhido}")
-        st.write("Resumo operacional compacto de todas as máquinas.")
+        st.markdown(f"### ⚙️ Eficiência em {mes_escolhido} de {ano_escolhido}")
+        st.write("Clique no botão de detalhes de cada máquina para ver as especificações e o histórico de paradas.")
 
     with col_grafico:
         resumo = st.session_state.dados_maquinas['status'].value_counts().reset_index()
@@ -87,38 +65,48 @@ if pagina == "Painel Principal":
         fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=100, showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
 
-    # Cria 7 colunas para os cartões super compactos
+    # Cria 7 colunas para distribuir os cartões na tela
     colunas = st.columns(7)
     
     for i, row in st.session_state.dados_maquinas.iterrows():
         col = colunas[i % 7]
         
-        # Define as classes CSS dependendo do status da máquina
-        classe_cartao = "cartao-op" if row["status"] == "Operacional" else "cartao-man"
-        classe_texto = "txt-op" if row["status"] == "Operacional" else "txt-man"
-        icone = "🟢" if row["status"] == "Operacional" else "🔴"
+        # --- CÁLCULO DE EFICIÊNCIA ---
+        horas_totais_mes = 720
+        horas_paradas = row["horas_manutencao"] + row["horas_sem_prog"]
+        # Garante que a eficiência não passe de 100% nem caia abaixo de 0%
+        eficiencia = max(0, 100 - ((horas_paradas / horas_totais_mes) * 100))
         
-        # Desenha o cartão em HTML diretamente no painel
-        cartao_html = f"""
-        <div class="cartao {classe_cartao}">
-            <div class="titulo">{row['nome']}</div>
-            <div class="status-badge {classe_texto}">{icone} {row['status']}</div>
-            <div class="linha"></div>
-            <div class="info"><span>📦 Cap:</span> <b>{row['cap']}</b></div>
-            <div class="info"><span>💧 Vol:</span> <b>{row['vol']}</b></div>
-            <div class="linha"></div>
-            <div class="info-alerta">🔧 Manut: {row['horas_manutencao']}h</div>
-            <div class="info-aviso">⏳ S/Prog: {row['horas_sem_prog']}h</div>
-        </div>
-        """
-        col.markdown(cartao_html, unsafe_allow_html=True)
+        # Define a cor do número baseado no resultado
+        if eficiencia >= 90:
+            cor_efi = "#28a745" # Verde
+        elif eficiencia >= 75:
+            cor_efi = "#f39c12" # Amarelo/Laranja
+        else:
+            cor_efi = "#dc3545" # Vermelho
+            
+        with col.container(border=True):
+            # Mostra apenas o nome e a porcentagem gigante no balão principal
+            st.markdown(f"<p class='nome-maquina'>{row['nome']}</p>", unsafe_allow_html=True)
+            st.markdown(f"<p class='eficiencia' style='color: {cor_efi};'>{eficiencia:.1f}%</p>", unsafe_allow_html=True)
+            
+            # Botão interativo: ao clicar, abre uma pequena janela de informações
+            with st.popover("🔎 Ver Detalhes", use_container_width=True):
+                cor_status = "🟢" if row["status"] == "Operacional" else "🔴"
+                st.markdown(f"**Status atual:** {cor_status} {row['status']}")
+                st.markdown("---")
+                st.markdown(f"📦 **Capacidade:** {row['cap']}")
+                st.markdown(f"💧 **Volume:** {row['vol']}")
+                st.markdown("---")
+                st.markdown(f"🔧 **Manutenção:** {row['horas_manutencao']}h")
+                st.markdown(f"⏳ **Sem Prog.:** {row['horas_sem_prog']}h")
 
 # ==========================================
 # TELA 2: LANÇAMENTOS E PLANILHAS
 # ==========================================
 elif pagina == "Lançamentos e Planilhas":
     st.title("⏱️ Lançamentos de Horas e Backup")
-    st.write("Dê dois cliques na tabela para editar as horas. Utilize os botões para exportar ou importar dados da folha de cálculo.")
+    st.write("Dê dois cliques na tabela para editar as horas. A Eficiência na tela principal será calculada automaticamente com base nesses lançamentos.")
     
     tabela_editada = st.data_editor(
         st.session_state.dados_maquinas, 
