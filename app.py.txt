@@ -1,0 +1,41 @@
+import streamlit as st
+
+# Isso faz o painel usar a tela toda, cabendo mais balões lado a lado
+st.set_page_config(layout="wide")
+
+st.title("Painel de Controle: Tinturaria")
+st.write("Especificações e capacidades de cada máquina do setor.")
+
+st.divider() # Cria uma linha para separar o título dos balões
+
+# Aqui estão todos os dados que digitei a partir da sua imagem
+maquinas = [
+    {"nome": "TB 05", "cap": "70 KG", "vol": "960 LITROS"},
+    {"nome": "TB 06", "cap": "140 KG", "vol": "2240 LITROS"},
+    {"nome": "TB 07", "cap": "140 KG", "vol": "2240 LITROS"},
+    {"nome": "TB 08", "cap": "140 KG", "vol": "2240 LITROS"},
+    {"nome": "TB 09", "cap": "70 KG", "vol": "960 LITROS"},
+    {"nome": "TB 10", "cap": "70 KG", "vol": "960 LITROS"},
+    {"nome": "CHINASA 19", "cap": "140 KG", "vol": "2240 LITROS"},
+    {"nome": "CHINASA 20", "cap": "20 KG", "vol": "700 LITROS"},
+    {"nome": "CHINASA 21", "cap": "21 KG", "vol": "700 LITROS"},
+    {"nome": "CHINASA 22", "cap": "22 KG", "vol": "700 LITROS"},
+    {"nome": "CHINASA 23", "cap": "23 KG", "vol": "700 LITROS"},
+    {"nome": "CHINASA 24", "cap": "70 KG", "vol": "960 LITROS"},
+    {"nome": "ARMARIO 01", "cap": "300 KG", "vol": "6500 LITROS"},
+    {"nome": "ARMARIO 02", "cap": "140 KG", "vol": "3250 LITROS"}
+]
+
+# Vamos criar 4 colunas para organizar os balões lado a lado
+colunas = st.columns(4)
+
+# Este código cria um "balão" (caixa com borda) para cada máquina
+for i, maq in enumerate(maquinas):
+    col = colunas[i % 4] # Distribui as máquinas entre as 4 colunas
+    
+    with col.container(border=True):
+        # Nome da máquina em destaque
+        st.subheader(f"⚙️ {maq['nome']}") 
+        # Especificações
+        st.write(f"**Capacidade:** {maq['cap']}")
+        st.write(f"**Volume de Água:** {maq['vol']}")
